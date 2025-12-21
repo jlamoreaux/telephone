@@ -144,7 +144,6 @@ await db.insert(myTable).values({ ... });
 
 ## Don'ts
 
-- Don't modify demo files (prefixed with `demo.` or in `demo/` folder) - these are boilerplate examples
-- Don't commit `.env.local` or API keys
+- Don't commit `.env.local`, `.dev.vars`, or API keys
 - Don't use `any` types without justification
 - Don't skip Biome formatting checks

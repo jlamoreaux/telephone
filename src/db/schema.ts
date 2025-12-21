@@ -1,17 +1,6 @@
 import { sqliteTable, integer, text } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
-// Demo table (kept for demo routes)
-export const todos = sqliteTable("todos", {
-	id: integer({ mode: "number" }).primaryKey({
-		autoIncrement: true,
-	}),
-	title: text().notNull(),
-	createdAt: integer("created_at", { mode: "timestamp" }).default(
-		sql`(unixepoch())`,
-	),
-});
-
 export const games = sqliteTable("games", {
 	id: text("id").primaryKey(), // nanoid
 	initialPrompt: text("initial_prompt").notNull(),

@@ -1,10 +1,3 @@
--- Create todos table (for demo compatibility)
-CREATE TABLE IF NOT EXISTS todos (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  title TEXT NOT NULL,
-  created_at INTEGER DEFAULT (unixepoch())
-);
-
 -- Create games table
 CREATE TABLE IF NOT EXISTS games (
   id TEXT PRIMARY KEY,
