@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
 	Plus,
@@ -64,7 +64,7 @@ function ModelCard({
 					{model.displayName}
 				</span>
 			</div>
-			<p className="text-xs text-gray-400 line-clamp-1">{model.description}</p>
+			<p className="text-xs text-gray-400 line-clamp-2">{model.description}</p>
 		</button>
 	);
 }
@@ -130,7 +130,7 @@ function SortableChainStep({
 				)}
 			</div>
 			<div className="flex-1 min-w-0">
-				<div className="font-medium text-white text-sm truncate">
+				<div className="font-medium text-white text-sm break-words">
 					{item.model.displayName}
 				</div>
 				<div className="text-xs text-gray-400">
@@ -156,6 +156,16 @@ function PlayPage() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [nextId, setNextId] = useState(1);
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+	// Auto-resize textarea
+	useEffect(() => {
+		const textarea = textareaRef.current;
+		if (textarea) {
+			textarea.style.height = "auto";
+			textarea.style.height = `${Math.max(96, textarea.scrollHeight)}px`;
+		}
+	}, [prompt]);
 
 	// DnD sensors for pointer and keyboard
 	const sensors = useSensors(
@@ -250,11 +260,12 @@ function PlayPage() {
 								Starting Prompt
 							</label>
 							<textarea
+								ref={textareaRef}
 								id="prompt"
 								value={prompt}
 								onChange={(e) => setPrompt(e.target.value)}
 								placeholder="Describe the first image you want to generate..."
-								className="w-full h-24 px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 resize-none"
+								className="w-full min-h-24 px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 resize-none overflow-hidden"
 							/>
 						</div>
 
