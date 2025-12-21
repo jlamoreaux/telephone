@@ -77,14 +77,6 @@ export const TEXT_TO_IMAGE_MODELS: Model[] = [
 		owner: "bytedance",
 		name: "seedream-3",
 	},
-	{
-		id: "bytedance/sdxl-lightning-4step",
-		displayName: "SDXL Lightning",
-		type: "text-to-image",
-		description: "Ultra-fast 4-step generation",
-		owner: "bytedance",
-		name: "sdxl-lightning-4step",
-	},
 	// Google - Imagen models
 	{
 		id: "google/imagen-4",
