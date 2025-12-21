@@ -7,10 +7,10 @@
 	],
 	"main": "src/worker-entry.ts",
 	"vars": {
-		"SITE_URL": "https://telephone-ai.jlmx.dev"
+		"SITE_URL": "https://telephone.jlmx.dev"
 	},
 	"routes": [
-		{ "pattern": "telephone-ai.jlmx.dev", "custom_domain": true }
+		{ "pattern": "telephone.jlmx.dev", "custom_domain": true }
 	],
 	"d1_databases": [
 		{
