@@ -1,4 +1,4 @@
-import { sqliteTable, integer, text } from "drizzle-orm/sqlite-core";
+import { sqliteTable, integer, text, index } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 export const games = sqliteTable("games", {
@@ -15,7 +15,10 @@ export const games = sqliteTable("games", {
 		sql`(unixepoch())`,
 	),
 	completedAt: integer("completed_at", { mode: "timestamp" }),
-});
+}, (table) => [
+	index("games_status_idx").on(table.status),
+	index("games_created_at_idx").on(table.createdAt),
+]);
 
 export const gameSteps = sqliteTable("game_steps", {
 	id: text("id").primaryKey(), // nanoid
@@ -40,7 +43,10 @@ export const gameSteps = sqliteTable("game_steps", {
 		sql`(unixepoch())`,
 	),
 	completedAt: integer("completed_at", { mode: "timestamp" }),
-});
+}, (table) => [
+	index("game_steps_game_id_idx").on(table.gameId),
+	index("game_steps_game_step_idx").on(table.gameId, table.stepNumber),
+]);
 
 // Type exports for use in the app
 export type Game = typeof games.$inferSelect;

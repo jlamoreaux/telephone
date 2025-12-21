@@ -21,21 +21,40 @@ interface GameIdInput {
 	gameId: string;
 }
 
+// Validation constants
+const MAX_PROMPT_LENGTH = 5000;
+const MAX_CHAIN_LENGTH = 20;
+
 // Create a new game
 export const createGame = createServerFn({ method: "POST" })
 	.inputValidator((data: CreateGameInput) => data)
 	.handler(async ({ data }) => {
 		const { initialPrompt, modelChain } = data;
 
-		if (!initialPrompt || initialPrompt.length < 1) {
+		// Validate prompt
+		if (!initialPrompt || initialPrompt.trim().length < 1) {
 			throw new Error("Initial prompt is required");
 		}
-		if (!modelChain || modelChain.length < 2) {
+		if (initialPrompt.length > MAX_PROMPT_LENGTH) {
+			throw new Error(`Prompt too long (max ${MAX_PROMPT_LENGTH} characters)`);
+		}
+
+		// Validate model chain
+		if (!modelChain || !Array.isArray(modelChain)) {
+			throw new Error("Model chain is required");
+		}
+		if (modelChain.length < 2) {
 			throw new Error("At least 2 models are required");
+		}
+		if (modelChain.length > MAX_CHAIN_LENGTH) {
+			throw new Error(`Too many models (max ${MAX_CHAIN_LENGTH})`);
 		}
 
 		// Validate all models exist
 		for (const modelId of modelChain) {
+			if (typeof modelId !== "string") {
+				throw new Error("Invalid model ID");
+			}
 			const model = getModelById(modelId);
 			if (!model) {
 				throw new Error(`Invalid model: ${modelId}`);

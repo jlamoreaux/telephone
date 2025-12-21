@@ -1,12 +1,16 @@
 import Replicate from "replicate";
-import { env } from "@/env";
+import { getRequiredEnv } from "@/env";
 import { getModelById, VISION_PROMPT, type ModelType } from "./models";
 
 // Initialize Replicate client (server-side only)
 function getClient() {
-	return new Replicate({
-		auth: env.REPLICATE_API_TOKEN,
-	});
+	// Ensure this only runs on the server
+	if (typeof window !== "undefined") {
+		throw new Error("Replicate client can only be used on the server");
+	}
+
+	const token = getRequiredEnv("REPLICATE_API_TOKEN");
+	return new Replicate({ auth: token });
 }
 
 export interface PredictionResult {

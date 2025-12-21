@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	Image,
@@ -9,10 +9,21 @@ import {
 	ArrowRight,
 	RotateCcw,
 	Share2,
+	Check,
 } from "lucide-react";
 import { getGame, runGameStep } from "@/server/game";
 import { getModelById } from "@/lib/models";
 import type { Game, GameStep } from "@/db/schema";
+
+// Validate URL to prevent XSS
+function isValidImageUrl(url: string): boolean {
+	try {
+		const parsed = new URL(url);
+		return ["http:", "https:"].includes(parsed.protocol);
+	} catch {
+		return false;
+	}
+}
 
 export const Route = createFileRoute("/game/$gameId")({
 	component: GamePage,
@@ -82,11 +93,12 @@ function StepCard({
 			{/* Input */}
 			<div className="mb-3">
 				<div className="text-xs text-gray-500 mb-1">Input:</div>
-				{step.input.startsWith("http") ? (
+				{isValidImageUrl(step.input) ? (
 					<img
 						src={step.input}
 						alt="Input"
 						className="w-full max-h-48 object-contain rounded-lg bg-slate-900"
+						referrerPolicy="no-referrer"
 					/>
 				) : (
 					<p className="text-sm text-gray-300 bg-slate-900/50 p-2 rounded-lg line-clamp-3">
@@ -136,6 +148,9 @@ function GamePage() {
 	const [game, setGame] = useState<Game>(initialData.game);
 	const [steps, setSteps] = useState<GameStep[]>(initialData.steps);
 	const [isPolling, setIsPolling] = useState(true);
+	const [errorCount, setErrorCount] = useState(0);
+	const [copied, setCopied] = useState(false);
+	const isMountedRef = useRef(true);
 
 	const runStep = useCallback(async () => {
 		if (game.status === "completed" || game.status === "failed") {
@@ -145,23 +160,49 @@ function GamePage() {
 
 		try {
 			const result = await runGameStep({ data: { gameId: game.id } });
+
+			// Check if component is still mounted
+			if (!isMountedRef.current) return;
+
 			if (result.game) {
 				setGame(result.game);
 			}
-			// Refresh full game state
-			const fullState = await getGame({ data: { gameId: game.id } });
-			setSteps(fullState.steps);
+
+			// Update steps from result instead of making another API call
+			if (result.step) {
+				setSteps((prev) => {
+					const existing = prev.find((s) => s.id === result.step?.id);
+					if (existing) {
+						return prev.map((s) => (s.id === result.step?.id ? result.step! : s));
+					}
+					return [...prev, result.step!];
+				});
+			}
 
 			if (result.done) {
-				setIsPolling(false);
+				// Fetch final state once when done
+				const fullState = await getGame({ data: { gameId: game.id } });
+				if (isMountedRef.current) {
+					setSteps(fullState.steps);
+					setIsPolling(false);
+				}
 			}
+
+			setErrorCount(0); // Reset error count on success
 		} catch (error) {
 			console.error("Error running step:", error);
-			// Continue polling even on error
+			setErrorCount((prev) => prev + 1);
+
+			// Stop polling after 5 consecutive errors
+			if (errorCount >= 4) {
+				setIsPolling(false);
+			}
 		}
-	}, [game.id, game.status]);
+	}, [game.id, game.status, errorCount]);
 
 	useEffect(() => {
+		isMountedRef.current = true;
+
 		if (!isPolling) return;
 
 		// Start running immediately
@@ -169,10 +210,14 @@ function GamePage() {
 
 		// Poll every 3 seconds
 		const interval = setInterval(runStep, 3000);
-		return () => clearInterval(interval);
+		return () => {
+			isMountedRef.current = false;
+			clearInterval(interval);
+		};
 	}, [isPolling, runStep]);
 
-	const modelChain = game.modelChain as string[];
+	// Validate modelChain with runtime check
+	const modelChain = Array.isArray(game.modelChain) ? game.modelChain : [];
 	const progress = Math.min(
 		(steps.filter((s) => s.status === "succeeded").length / modelChain.length) *
 			100,
@@ -284,28 +329,31 @@ function GamePage() {
 				</div>
 
 				{/* Final Result */}
-				{game.status === "completed" && steps.length > 0 && (
-					<div className="mt-8 p-6 rounded-xl border-2 border-cyan-500/50 bg-slate-800/50">
-						<h2 className="text-xl font-semibold text-white mb-4 text-center">
-							Final Result
-						</h2>
-						{steps[steps.length - 1].output && (
+				{game.status === "completed" && steps.length > 0 && (() => {
+					const lastStep = steps[steps.length - 1];
+					if (!lastStep.output) return null;
+					return (
+						<div className="mt-8 p-6 rounded-xl border-2 border-cyan-500/50 bg-slate-800/50">
+							<h2 className="text-xl font-semibold text-white mb-4 text-center">
+								Final Result
+							</h2>
 							<div>
-								{steps[steps.length - 1].modelType === "text-to-image" ? (
+								{lastStep.modelType === "text-to-image" && isValidImageUrl(lastStep.output) ? (
 									<img
-										src={steps[steps.length - 1].output!}
+										src={lastStep.output}
 										alt="Final result"
 										className="w-full rounded-lg shadow-xl"
+										referrerPolicy="no-referrer"
 									/>
 								) : (
 									<p className="text-lg text-gray-300 text-center">
-										{steps[steps.length - 1].output}
+										{lastStep.output}
 									</p>
 								)}
 							</div>
-						)}
-					</div>
-				)}
+						</div>
+					);
+				})()}
 
 				{/* Actions */}
 				<div className="mt-8 flex justify-center gap-4">
@@ -319,13 +367,28 @@ function GamePage() {
 					{game.status === "completed" && (
 						<button
 							type="button"
-							onClick={() => {
-								navigator.clipboard.writeText(window.location.href);
+							onClick={async () => {
+								try {
+									await navigator.clipboard.writeText(window.location.href);
+									setCopied(true);
+									setTimeout(() => setCopied(false), 2000);
+								} catch (error) {
+									console.error("Failed to copy:", error);
+								}
 							}}
 							className="px-6 py-3 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white font-medium flex items-center gap-2 transition-colors"
 						>
-							<Share2 className="w-5 h-5" />
-							Share
+							{copied ? (
+								<>
+									<Check className="w-5 h-5" />
+									Copied!
+								</>
+							) : (
+								<>
+									<Share2 className="w-5 h-5" />
+									Share
+								</>
+							)}
 						</button>
 					)}
 				</div>
