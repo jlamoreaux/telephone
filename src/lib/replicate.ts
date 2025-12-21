@@ -72,14 +72,6 @@ function buildVisionInput(modelId: string, imageUrl: string): Record<string, unk
 		};
 	}
 
-	// Moondream uses 'image' (single)
-	if (modelId.includes("moondream")) {
-		return {
-			image: imageUrl,
-			prompt: VISION_PROMPT,
-		};
-	}
-
 	// Default format - 'image' (single)
 	return {
 		image: imageUrl,

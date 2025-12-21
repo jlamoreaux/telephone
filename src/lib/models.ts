@@ -230,15 +230,6 @@ export const VISION_MODELS: Model[] = [
 		owner: "anthropic",
 		name: "claude-3.5-sonnet",
 	},
-	// Other vision models
-	{
-		id: "lucataco/moondream2",
-		displayName: "Moondream 2",
-		type: "vision",
-		description: "Efficient small vision language model",
-		owner: "lucataco",
-		name: "moondream2",
-	},
 ];
 
 // All models combined
