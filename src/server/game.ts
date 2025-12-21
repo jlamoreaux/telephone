@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestIP } from "@tanstack/react-start/server";
+import { getRequest } from "@tanstack/react-start/server";
 import { nanoid } from "nanoid";
 import { db } from "@/db";
 import { games, gameSteps } from "@/db/schema";
@@ -32,6 +32,26 @@ const MAX_PROMPT_LENGTH = 5000;
 const MAX_CHAIN_LENGTH = 10;
 const MAX_MODEL_USES = 2;
 
+// Get client IP from request headers (Cloudflare Workers)
+function getClientIP(): string {
+	const request = getRequest();
+	if (!request) return "unknown";
+
+	// Cloudflare provides the real client IP in this header
+	const cfIP = request.headers.get("CF-Connecting-IP");
+	if (cfIP) return cfIP;
+
+	// Fallback to X-Forwarded-For
+	const forwardedFor = request.headers.get("X-Forwarded-For");
+	if (forwardedFor) return forwardedFor.split(",")[0].trim();
+
+	// Fallback to X-Real-IP
+	const realIP = request.headers.get("X-Real-IP");
+	if (realIP) return realIP;
+
+	return "unknown";
+}
+
 // Create a new game
 export const createGame = createServerFn({ method: "POST" })
 	.inputValidator((data: CreateGameInput) => data)
@@ -39,7 +59,7 @@ export const createGame = createServerFn({ method: "POST" })
 		const { initialPrompt, modelChain } = data;
 
 		// Check rate limit
-		const clientIP = getRequestIP() || "unknown";
+		const clientIP = getClientIP();
 		const rateLimitResult = await checkRateLimit(clientIP, "create_game");
 		if (!rateLimitResult.allowed) {
 			throw rateLimitExceededError(rateLimitResult);
@@ -337,7 +357,7 @@ export const runGameStep = createServerFn({ method: "POST" })
 
 // Get games for the current user (by IP)
 export const listGames = createServerFn({ method: "GET" }).handler(async () => {
-	const clientIP = getRequestIP() || "unknown";
+	const clientIP = getClientIP();
 
 	const userGames = await db.query.games.findMany({
 		where: eq(games.creatorIp, clientIP),
