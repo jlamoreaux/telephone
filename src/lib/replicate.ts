@@ -72,14 +72,6 @@ function buildVisionInput(modelId: string, imageUrl: string): Record<string, unk
 		};
 	}
 
-	// LLaVA models use 'image' (single)
-	if (modelId.includes("llava")) {
-		return {
-			image: imageUrl,
-			prompt: VISION_PROMPT,
-		};
-	}
-
 	// Moondream uses 'image' (single)
 	if (modelId.includes("moondream")) {
 		return {

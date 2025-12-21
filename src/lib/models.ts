@@ -223,14 +223,6 @@ export const VISION_MODELS: Model[] = [
 		owner: "lucataco",
 		name: "moondream2",
 	},
-	{
-		id: "yorickvp/llava-13b",
-		displayName: "LLaVA 13B",
-		type: "vision",
-		description: "Large language and vision model",
-		owner: "yorickvp",
-		name: "llava-13b",
-	},
 ];
 
 // All models combined
