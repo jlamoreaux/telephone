@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestIP } from "@tanstack/react-start/server";
 import { nanoid } from "nanoid";
 import { db } from "@/db";
 import { games, gameSteps } from "@/db/schema";
@@ -10,6 +11,11 @@ import {
 	extractTextOutput,
 } from "@/lib/replicate";
 import { getModelById, getModelType } from "@/lib/models";
+import { saveOgImage } from "@/lib/storage";
+import {
+	checkRateLimit,
+	rateLimitExceededError,
+} from "@/lib/rate-limit";
 
 // Type definitions for inputs
 interface CreateGameInput {
@@ -23,13 +29,21 @@ interface GameIdInput {
 
 // Validation constants
 const MAX_PROMPT_LENGTH = 5000;
-const MAX_CHAIN_LENGTH = 20;
+const MAX_CHAIN_LENGTH = 10;
+const MAX_MODEL_USES = 2;
 
 // Create a new game
 export const createGame = createServerFn({ method: "POST" })
 	.inputValidator((data: CreateGameInput) => data)
 	.handler(async ({ data }) => {
 		const { initialPrompt, modelChain } = data;
+
+		// Check rate limit
+		const clientIP = getRequestIP() || "unknown";
+		const rateLimitResult = await checkRateLimit(clientIP, "create_game");
+		if (!rateLimitResult.allowed) {
+			throw rateLimitExceededError(rateLimitResult);
+		}
 
 		// Validate prompt
 		if (!initialPrompt || initialPrompt.trim().length < 1) {
@@ -50,7 +64,8 @@ export const createGame = createServerFn({ method: "POST" })
 			throw new Error(`Too many models (max ${MAX_CHAIN_LENGTH})`);
 		}
 
-		// Validate all models exist
+		// Validate all models exist and count uses
+		const modelUseCounts: Record<string, number> = {};
 		for (const modelId of modelChain) {
 			if (typeof modelId !== "string") {
 				throw new Error("Invalid model ID");
@@ -58,6 +73,13 @@ export const createGame = createServerFn({ method: "POST" })
 			const model = getModelById(modelId);
 			if (!model) {
 				throw new Error(`Invalid model: ${modelId}`);
+			}
+			// Count model uses
+			modelUseCounts[modelId] = (modelUseCounts[modelId] || 0) + 1;
+			if (modelUseCounts[modelId] > MAX_MODEL_USES) {
+				throw new Error(
+					`Model "${model.displayName}" can only be used ${MAX_MODEL_USES} times per game`,
+				);
 			}
 		}
 
@@ -120,12 +142,41 @@ export const runGameStep = createServerFn({ method: "POST" })
 
 		// Check if game is complete
 		if (currentStepIndex >= modelChain.length) {
+			// Try to save OG image from the last image-generating step
+			let ogImageUrl: string | undefined;
+			try {
+				const allSteps = await db.query.gameSteps.findMany({
+					where: eq(gameSteps.gameId, gameId),
+					orderBy: (gameSteps, { desc }) => [desc(gameSteps.stepNumber)],
+				});
+
+				// Find the last step that produced an image
+				const lastImageStep = allSteps.find(
+					(s) =>
+						s.modelType === "text-to-image" &&
+						s.status === "succeeded" &&
+						s.output?.startsWith("http"),
+				);
+
+				if (lastImageStep?.output) {
+					ogImageUrl = await saveOgImage(gameId, lastImageStep.output);
+				}
+			} catch (error) {
+				// Log but don't fail game completion if OG image save fails
+				console.error("Failed to save OG image:", error);
+			}
+
 			await db
 				.update(games)
-				.set({ status: "completed", completedAt: new Date() })
+				.set({
+					status: "completed",
+					completedAt: new Date(),
+					...(ogImageUrl && { ogImageUrl }),
+				})
 				.where(eq(games.id, gameId));
+
 			return {
-				game: { ...game, status: "completed" as const },
+				game: { ...game, status: "completed" as const, ogImageUrl },
 				step: null,
 				done: true,
 			};

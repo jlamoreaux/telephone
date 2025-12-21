@@ -69,6 +69,9 @@ class ErrorBoundary extends Component<
   }
 }
 
+// Get site URL from environment (set in production)
+const SITE_URL = process.env.SITE_URL || '';
+
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   head: () => ({
     meta: [
@@ -82,6 +85,64 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       {
         title: 'Telephone AI',
       },
+      // SEO meta tags
+      {
+        name: 'description',
+        content:
+          'Play AI Telephone - watch messages transform as they pass through chains of AI image generators and vision models.',
+      },
+      {
+        name: 'theme-color',
+        content: '#0f172a',
+      },
+      // Open Graph meta tags
+      {
+        property: 'og:title',
+        content: 'Telephone AI - The AI Telephone Game',
+      },
+      {
+        property: 'og:description',
+        content:
+          'Watch messages transform as they pass through chains of AI image generators and vision models. Like telephone, but with AI!',
+      },
+      {
+        property: 'og:type',
+        content: 'website',
+      },
+      {
+        property: 'og:site_name',
+        content: 'Telephone AI',
+      },
+      // Open Graph image
+      {
+        property: 'og:image',
+        content: SITE_URL ? `${SITE_URL}/og-default.png` : '/og-default.png',
+      },
+      // Twitter Card meta tags
+      {
+        name: 'twitter:card',
+        content: 'summary_large_image',
+      },
+      {
+        name: 'twitter:title',
+        content: 'Telephone AI - The AI Telephone Game',
+      },
+      {
+        name: 'twitter:description',
+        content:
+          'Watch messages transform as they pass through chains of AI image generators and vision models.',
+      },
+      {
+        name: 'twitter:image',
+        content: SITE_URL ? `${SITE_URL}/og-default.png` : '/og-default.png',
+      },
+      // URL meta tags (only when SITE_URL is configured)
+      ...(SITE_URL
+        ? [
+            { property: 'og:url', content: SITE_URL },
+            { name: 'twitter:url', content: SITE_URL },
+          ]
+        : []),
     ],
     links: [
       {

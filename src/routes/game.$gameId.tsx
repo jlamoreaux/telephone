@@ -25,35 +25,99 @@ function isValidImageUrl(url: string): boolean {
 	}
 }
 
+// Get site URL from environment (set in production)
+const SITE_URL = process.env.SITE_URL || "";
+
 export const Route = createFileRoute("/game/$gameId")({
 	component: GamePage,
 	loader: async ({ params }) => {
 		const result = await getGame({ data: { gameId: params.gameId } });
 		return result;
 	},
+	head: ({ loaderData, params }) => {
+		const { game } = loaderData;
+		const title =
+			game.status === "completed"
+				? `Telephone AI Game - Complete`
+				: `Telephone AI Game - In Progress`;
+
+		// Truncate prompt for description
+		const promptPreview =
+			game.initialPrompt.length > 100
+				? `${game.initialPrompt.slice(0, 100)}...`
+				: game.initialPrompt;
+
+		// Use the stored OG image URL from R2 (persisted and won't expire)
+		// Make it absolute if SITE_URL is set and it's a relative path
+		let ogImage = game.ogImageUrl;
+		if (ogImage && SITE_URL && ogImage.startsWith("/")) {
+			ogImage = `${SITE_URL}${ogImage}`;
+		}
+
+		const gameUrl = SITE_URL ? `${SITE_URL}/game/${params.gameId}` : "";
+
+		const meta: Array<Record<string, string>> = [
+			{ title },
+			{
+				property: "og:title",
+				content: title,
+			},
+			{
+				property: "og:description",
+				content: `Starting prompt: "${promptPreview}"`,
+			},
+			{
+				name: "twitter:title",
+				content: title,
+			},
+			{
+				name: "twitter:description",
+				content: `Starting prompt: "${promptPreview}"`,
+			},
+		];
+
+		if (ogImage) {
+			meta.push(
+				{ property: "og:image", content: ogImage },
+				{ name: "twitter:image", content: ogImage }
+			);
+		}
+
+		if (gameUrl) {
+			meta.push(
+				{ property: "og:url", content: gameUrl },
+				{ name: "twitter:url", content: gameUrl }
+			);
+		}
+
+		return { meta };
+	},
 });
 
 function StepCard({
 	step,
 	isActive,
+	animationDelay = 0,
 }: {
 	step: GameStep;
 	isActive: boolean;
+	animationDelay?: number;
 }) {
 	const model = getModelById(step.modelId);
 	const isImage = step.modelType === "text-to-image";
 
 	return (
 		<div
-			className={`rounded-xl border p-4 transition-all ${
+			className={`rounded-xl border p-4 transition-all animate-fade-in-up ${
 				isActive
-					? "border-cyan-500 bg-slate-800/80 shadow-lg shadow-cyan-500/10"
+					? "border-cyan-500 bg-slate-800/80 shadow-lg shadow-cyan-500/10 animate-pulse-glow"
 					: step.status === "succeeded"
 						? "border-green-500/50 bg-slate-800/50"
 						: step.status === "failed"
 							? "border-red-500/50 bg-slate-800/50"
 							: "border-slate-700 bg-slate-800/30"
 			}`}
+			style={{ animationDelay: `${animationDelay}ms` }}
 		>
 			{/* Header */}
 			<div className="flex items-center gap-3 mb-3">
@@ -136,7 +200,9 @@ function StepCard({
 			{isActive && (step.status === "running" || step.status === "pending") && (
 				<div className="flex items-center gap-2 text-cyan-400 text-sm">
 					<Loader2 className="w-4 h-4 animate-spin" />
-					{step.status === "pending" ? "Starting..." : "Processing..."}
+					<span className="animate-shimmer bg-clip-text">
+						{step.status === "pending" ? "Starting..." : "Processing..."}
+					</span>
 				</div>
 			)}
 		</div>
@@ -263,7 +329,7 @@ function GamePage() {
 				</div>
 
 				{/* Initial Prompt */}
-				<div className="mb-6 p-4 rounded-xl border border-slate-700 bg-slate-800/50">
+				<div className="mb-6 p-4 rounded-xl border border-slate-700 bg-slate-800/50 animate-fade-in-up">
 					<div className="text-sm text-gray-400 mb-1">Starting Prompt</div>
 					<p className="text-white">{game.initialPrompt}</p>
 				</div>
@@ -271,17 +337,18 @@ function GamePage() {
 				{/* Steps */}
 				<div className="space-y-4">
 					{steps.map((step, index) => (
-						<div key={step.id}>
+						<div key={step.id} className="animate-fade-in">
 							<StepCard
 								step={step}
 								isActive={
 									game.currentStep === step.stepNumber &&
 									(game.status === "running" || game.status === "pending")
 								}
+								animationDelay={index * 100}
 							/>
 							{index < steps.length - 1 && (
 								<div className="flex justify-center py-2">
-									<ArrowRight className="w-5 h-5 text-gray-600" />
+									<ArrowRight className="w-5 h-5 text-gray-600 animate-fade-in" style={{ animationDelay: `${index * 100 + 50}ms` }} />
 								</div>
 							)}
 						</div>
@@ -333,11 +400,11 @@ function GamePage() {
 					const lastStep = steps[steps.length - 1];
 					if (!lastStep.output) return null;
 					return (
-						<div className="mt-8 p-6 rounded-xl border-2 border-cyan-500/50 bg-slate-800/50">
+						<div className="mt-8 p-6 rounded-xl border-2 border-cyan-500/50 bg-slate-800/50 animate-fade-in-up animate-pulse-glow">
 							<h2 className="text-xl font-semibold text-white mb-4 text-center">
 								Final Result
 							</h2>
-							<div>
+							<div className="animate-fade-in" style={{ animationDelay: '200ms' }}>
 								{lastStep.modelType === "text-to-image" && isValidImageUrl(lastStep.output) ? (
 									<img
 										src={lastStep.output}

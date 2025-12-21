@@ -2,6 +2,94 @@ import Replicate from "replicate";
 import { getRequiredEnv } from "@/env";
 import { getModelById, VISION_PROMPT, type ModelType } from "./models";
 
+// Retry configuration
+const RETRY_CONFIG = {
+	maxRetries: 3,
+	initialDelayMs: 1000,
+	maxDelayMs: 10000,
+	backoffMultiplier: 2,
+};
+
+// Retryable error codes (transient failures)
+const RETRYABLE_STATUS_CODES = [429, 500, 502, 503, 504];
+
+// Retry wrapper with exponential backoff
+async function withRetry<T>(
+	operation: () => Promise<T>,
+	context: string,
+): Promise<T> {
+	let lastError: Error | undefined;
+
+	for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+		try {
+			return await operation();
+		} catch (error) {
+			lastError = error instanceof Error ? error : new Error(String(error));
+
+			// Check if error is retryable
+			const isRetryable = isRetryableError(error);
+
+			if (!isRetryable || attempt === RETRY_CONFIG.maxRetries) {
+				throw lastError;
+			}
+
+			// Calculate delay with exponential backoff and jitter
+			const baseDelay =
+				RETRY_CONFIG.initialDelayMs *
+				Math.pow(RETRY_CONFIG.backoffMultiplier, attempt);
+			const jitter = Math.random() * 0.3 * baseDelay;
+			const delay = Math.min(baseDelay + jitter, RETRY_CONFIG.maxDelayMs);
+
+			console.log(
+				`[Replicate] ${context} failed (attempt ${attempt + 1}/${RETRY_CONFIG.maxRetries + 1}), retrying in ${Math.round(delay)}ms: ${lastError.message}`,
+			);
+
+			await new Promise((resolve) => setTimeout(resolve, delay));
+		}
+	}
+
+	throw lastError;
+}
+
+// Check if an error is retryable
+function isRetryableError(error: unknown): boolean {
+	if (error instanceof Error) {
+		const message = error.message.toLowerCase();
+
+		// Rate limiting
+		if (message.includes("rate limit") || message.includes("429")) {
+			return true;
+		}
+
+		// Server errors
+		if (
+			message.includes("500") ||
+			message.includes("502") ||
+			message.includes("503") ||
+			message.includes("504")
+		) {
+			return true;
+		}
+
+		// Network errors
+		if (
+			message.includes("network") ||
+			message.includes("timeout") ||
+			message.includes("econnreset") ||
+			message.includes("socket hang up")
+		) {
+			return true;
+		}
+
+		// Check for status code in error
+		if ("status" in error && typeof error.status === "number") {
+			return RETRYABLE_STATUS_CODES.includes(error.status);
+		}
+	}
+
+	return false;
+}
+
 // Initialize Replicate client (server-side only)
 function getClient() {
 	// Ensure this only runs on the server
@@ -32,21 +120,23 @@ export async function createImagePrediction(
 		throw new Error(`Invalid text-to-image model: ${modelId}`);
 	}
 
-	const prediction = await client.predictions.create({
-		model: modelId,
-		input: {
-			prompt,
-			// Common defaults that work across most models
-			num_outputs: 1,
-		},
-	});
+	return withRetry(async () => {
+		const prediction = await client.predictions.create({
+			model: modelId,
+			input: {
+				prompt,
+				// Common defaults that work across most models
+				num_outputs: 1,
+			},
+		});
 
-	return {
-		id: prediction.id,
-		status: prediction.status,
-		output: prediction.output as string[] | undefined,
-		error: prediction.error as string | undefined,
-	};
+		return {
+			id: prediction.id,
+			status: prediction.status,
+			output: prediction.output as string[] | undefined,
+			error: prediction.error as string | undefined,
+		};
+	}, `createImagePrediction(${modelId})`);
 }
 
 // Build the input object based on model-specific requirements
@@ -97,17 +187,19 @@ export async function createVisionPrediction(
 
 	const input = buildVisionInput(modelId, imageUrl);
 
-	const prediction = await client.predictions.create({
-		model: modelId,
-		input,
-	});
+	return withRetry(async () => {
+		const prediction = await client.predictions.create({
+			model: modelId,
+			input,
+		});
 
-	return {
-		id: prediction.id,
-		status: prediction.status,
-		output: prediction.output as string | undefined,
-		error: prediction.error as string | undefined,
-	};
+		return {
+			id: prediction.id,
+			status: prediction.status,
+			output: prediction.output as string | undefined,
+			error: prediction.error as string | undefined,
+		};
+	}, `createVisionPrediction(${modelId})`);
 }
 
 // Get the current status of a prediction
@@ -115,14 +207,17 @@ export async function getPrediction(
 	predictionId: string,
 ): Promise<PredictionResult> {
 	const client = getClient();
-	const prediction = await client.predictions.get(predictionId);
 
-	return {
-		id: prediction.id,
-		status: prediction.status,
-		output: prediction.output as string | string[] | undefined,
-		error: prediction.error as string | undefined,
-	};
+	return withRetry(async () => {
+		const prediction = await client.predictions.get(predictionId);
+
+		return {
+			id: prediction.id,
+			status: prediction.status,
+			output: prediction.output as string | string[] | undefined,
+			error: prediction.error as string | undefined,
+		};
+	}, `getPrediction(${predictionId})`);
 }
 
 // Wait for a prediction to complete (with polling)

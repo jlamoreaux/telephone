@@ -11,6 +11,7 @@ export const games = sqliteTable("games", {
 		.notNull()
 		.default("pending"),
 	currentStep: integer("current_step").notNull().default(0),
+	ogImageUrl: text("og_image_url"), // R2 URL for Open Graph sharing image
 	createdAt: integer("created_at", { mode: "timestamp" }).default(
 		sql`(unixepoch())`,
 	),
@@ -48,8 +49,19 @@ export const gameSteps = sqliteTable("game_steps", {
 	index("game_steps_game_step_idx").on(table.gameId, table.stepNumber),
 ]);
 
+// Rate limiting table for tracking API usage per IP
+export const rateLimits = sqliteTable("rate_limits", {
+	id: text("id").primaryKey(), // IP address or identifier
+	action: text("action").notNull(), // e.g., "create_game"
+	count: integer("count").notNull().default(0),
+	windowStart: integer("window_start", { mode: "timestamp" }).notNull(),
+}, (table) => [
+	index("rate_limits_action_idx").on(table.id, table.action),
+]);
+
 // Type exports for use in the app
 export type Game = typeof games.$inferSelect;
 export type NewGame = typeof games.$inferInsert;
 export type GameStep = typeof gameSteps.$inferSelect;
 export type NewGameStep = typeof gameSteps.$inferInsert;
+export type RateLimit = typeof rateLimits.$inferSelect;

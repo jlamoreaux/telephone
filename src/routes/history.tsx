@@ -35,7 +35,7 @@ function GameCard({ game }: { game: Game }) {
 		<Link
 			to="/game/$gameId"
 			params={{ gameId: game.id }}
-			className="block p-4 rounded-xl border border-slate-700 bg-slate-800/50 hover:border-cyan-500/50 hover:bg-slate-800 transition-all group"
+			className="block p-4 rounded-xl border border-slate-700 bg-slate-800/50 hover:border-cyan-500/50 hover:bg-slate-800 hover:scale-[1.01] active:scale-[0.99] transition-all group"
 		>
 			<div className="flex items-start justify-between gap-4">
 				<div className="flex-1 min-w-0">
@@ -91,7 +91,7 @@ function HistoryPage() {
 		<div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-6">
 			<div className="max-w-3xl mx-auto">
 				{/* Header */}
-				<div className="text-center mb-8">
+				<div className="text-center mb-8 animate-fade-in-up">
 					<div className="flex items-center justify-center gap-3 mb-4">
 						<Clock className="w-10 h-10 text-cyan-400" />
 					</div>
@@ -103,11 +103,11 @@ function HistoryPage() {
 
 				{/* Games List */}
 				{games.length === 0 ? (
-					<div className="text-center py-16">
+					<div className="text-center py-16 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
 						<p className="text-gray-400 mb-6">No games yet. Start your first one!</p>
 						<Link
 							to="/play"
-							className="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold rounded-xl transition-colors"
+							className="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 hover:scale-105 active:scale-95 text-white font-semibold rounded-xl transition-all"
 						>
 							<Play className="w-5 h-5" />
 							Start a New Game
@@ -115,8 +115,14 @@ function HistoryPage() {
 					</div>
 				) : (
 					<div className="space-y-3">
-						{games.map((game) => (
-							<GameCard key={game.id} game={game} />
+						{games.map((game, index) => (
+							<div
+								key={game.id}
+								className="animate-fade-in-up"
+								style={{ animationDelay: `${index * 50}ms` }}
+							>
+								<GameCard game={game} />
+							</div>
 						))}
 					</div>
 				)}

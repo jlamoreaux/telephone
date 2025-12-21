@@ -1,20 +1,28 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "telephone-ai",
-  "compatibility_date": "2025-01-01",
-  "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry",
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "telephone-ai-db",
-      "database_id": "local"
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "IMAGES",
-      "bucket_name": "telephone-ai-images"
-    }
-  ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "telephone-ai",
+	"compatibility_date": "2025-01-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"main": "src/worker-entry.ts",
+	"vars": {
+		"SITE_URL": "https://telephone-ai.jlmx.dev"
+	},
+	"routes": [
+		{ "pattern": "telephone-ai.jlmx.dev", "custom_domain": true }
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "telephone-ai-db",
+			"database_id": "1f3b4cf6-c4ad-4ca9-a3a3-7ac2e009e4ba"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "IMAGES",
+			"bucket_name": "telephone-ai-images"
+		}
+	]
 }
