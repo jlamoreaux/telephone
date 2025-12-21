@@ -182,6 +182,14 @@ export const VISION_MODELS: Model[] = [
 	},
 	// OpenAI
 	{
+		id: "openai/gpt-4.1-mini",
+		displayName: "GPT-4.1 Mini",
+		type: "vision",
+		description: "Latest OpenAI mini model with vision",
+		owner: "openai",
+		name: "gpt-4.1-mini",
+	},
+	{
 		id: "openai/gpt-4o",
 		displayName: "GPT-4o",
 		type: "vision",
@@ -199,6 +207,14 @@ export const VISION_MODELS: Model[] = [
 	},
 	// Anthropic
 	{
+		id: "anthropic/claude-4.5-sonnet",
+		displayName: "Claude 4.5 Sonnet",
+		type: "vision",
+		description: "Best coding model with vision capabilities",
+		owner: "anthropic",
+		name: "claude-4.5-sonnet",
+	},
+	{
 		id: "anthropic/claude-4-sonnet",
 		displayName: "Claude 4 Sonnet",
 		type: "vision",
@@ -213,6 +229,14 @@ export const VISION_MODELS: Model[] = [
 		description: "Intelligent Claude with hybrid reasoning",
 		owner: "anthropic",
 		name: "claude-3.7-sonnet",
+	},
+	{
+		id: "anthropic/claude-3.5-sonnet",
+		displayName: "Claude 3.5 Sonnet",
+		type: "vision",
+		description: "200K context with image understanding",
+		owner: "anthropic",
+		name: "claude-3.5-sonnet",
 	},
 	// Other vision models
 	{
