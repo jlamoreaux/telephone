@@ -159,14 +159,6 @@ export const TEXT_TO_IMAGE_MODELS: Model[] = [
 		owner: "stability-ai",
 		name: "stable-diffusion-3.5-large-turbo",
 	},
-	{
-		id: "stability-ai/sdxl",
-		displayName: "Stable Diffusion XL",
-		type: "text-to-image",
-		description: "Versatile, widely-used image generation",
-		owner: "stability-ai",
-		name: "sdxl",
-	},
 ];
 
 // Vision models that can describe images
