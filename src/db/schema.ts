@@ -12,6 +12,7 @@ export const games = sqliteTable("games", {
 		.default("pending"),
 	currentStep: integer("current_step").notNull().default(0),
 	ogImageUrl: text("og_image_url"), // R2 URL for Open Graph sharing image
+	creatorIp: text("creator_ip"), // IP address of the creator (for history filtering)
 	createdAt: integer("created_at", { mode: "timestamp" }).default(
 		sql`(unixepoch())`,
 	),
@@ -19,6 +20,7 @@ export const games = sqliteTable("games", {
 }, (table) => [
 	index("games_status_idx").on(table.status),
 	index("games_created_at_idx").on(table.createdAt),
+	index("games_creator_ip_idx").on(table.creatorIp),
 ]);
 
 export const gameSteps = sqliteTable("game_steps", {

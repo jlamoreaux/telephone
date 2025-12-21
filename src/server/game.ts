@@ -91,6 +91,7 @@ export const createGame = createServerFn({ method: "POST" })
 			modelChain,
 			status: "pending",
 			currentStep: 0,
+			creatorIp: clientIP,
 		});
 
 		return { gameId };
@@ -334,11 +335,14 @@ export const runGameStep = createServerFn({ method: "POST" })
 		};
 	});
 
-// Get all games (for history)
+// Get games for the current user (by IP)
 export const listGames = createServerFn({ method: "GET" }).handler(async () => {
-	const allGames = await db.query.games.findMany({
+	const clientIP = getRequestIP() || "unknown";
+
+	const userGames = await db.query.games.findMany({
+		where: eq(games.creatorIp, clientIP),
 		orderBy: (games, { desc }) => [desc(games.createdAt)],
 		limit: 50,
 	});
-	return { games: allGames };
+	return { games: userGames };
 });
