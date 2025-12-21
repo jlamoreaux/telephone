@@ -21,6 +21,17 @@ export default function Header() {
 					<Play className="w-4 h-4" />
 					<span>Play</span>
 				</Link>
+				<Link
+					to="/history"
+					className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors"
+					activeProps={{
+						className:
+							"flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-500/20 text-cyan-400",
+					}}
+				>
+					<History className="w-4 h-4" />
+					<span>History</span>
+				</Link>
 			</nav>
 		</header>
 	);

@@ -10,5 +10,11 @@
       "database_name": "telephone-ai-db",
       "database_id": "local"
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "IMAGES",
+      "bucket_name": "telephone-ai-images"
+    }
   ]
 }
