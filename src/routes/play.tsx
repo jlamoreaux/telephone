@@ -6,9 +6,26 @@ import {
 	Play,
 	Image,
 	Eye,
-	ChevronUp,
-	ChevronDown,
+	GripVertical,
+	AlertTriangle,
 } from "lucide-react";
+import {
+	DndContext,
+	closestCenter,
+	KeyboardSensor,
+	PointerSensor,
+	useSensor,
+	useSensors,
+	type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+	arrayMove,
+	SortableContext,
+	sortableKeyboardCoordinates,
+	useSortable,
+	verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { TEXT_TO_IMAGE_MODELS, VISION_MODELS, type Model } from "@/lib/models";
 import { createGame } from "@/server/game";
 
@@ -52,44 +69,55 @@ function ModelCard({
 	);
 }
 
-function ChainStep({
-	model,
+// Chain item with unique ID for drag-and-drop
+interface ChainItem {
+	id: string;
+	model: Model;
+}
+
+function SortableChainStep({
+	item,
 	index,
 	onRemove,
-	onMoveUp,
-	onMoveDown,
-	isFirst,
-	isLast,
 }: {
-	model: Model;
+	item: ChainItem;
 	index: number;
 	onRemove: () => void;
-	onMoveUp: () => void;
-	onMoveDown: () => void;
-	isFirst: boolean;
-	isLast: boolean;
 }) {
-	const isImage = model.type === "text-to-image";
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({ id: item.id });
+
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+	};
+
+	const isImage = item.model.type === "text-to-image";
+
 	return (
-		<div className="flex items-center gap-2 p-3 rounded-lg border border-slate-700 bg-slate-800/50">
-			<div className="flex flex-col gap-0.5">
-				<button
-					type="button"
-					onClick={onMoveUp}
-					disabled={isFirst}
-					className="p-0.5 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
-				>
-					<ChevronUp className="w-4 h-4" />
-				</button>
-				<button
-					type="button"
-					onClick={onMoveDown}
-					disabled={isLast}
-					className="p-0.5 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
-				>
-					<ChevronDown className="w-4 h-4" />
-				</button>
-			</div>
+		<div
+			ref={setNodeRef}
+			style={style}
+			className={`flex items-center gap-2 p-3 rounded-lg border bg-slate-800/50 ${
+				isDragging
+					? "border-cyan-500 shadow-lg shadow-cyan-500/20 z-50"
+					: "border-slate-700"
+			}`}
+		>
+			<button
+				type="button"
+				className="p-1 text-gray-400 hover:text-white cursor-grab active:cursor-grabbing touch-none"
+				{...attributes}
+				{...listeners}
+			>
+				<GripVertical className="w-4 h-4" />
+			</button>
 			<div
 				className={`w-8 h-8 rounded-full flex items-center justify-center ${
 					isImage ? "bg-purple-500/20" : "bg-green-500/20"
@@ -103,7 +131,7 @@ function ChainStep({
 			</div>
 			<div className="flex-1 min-w-0">
 				<div className="font-medium text-white text-sm truncate">
-					{model.displayName}
+					{item.model.displayName}
 				</div>
 				<div className="text-xs text-gray-400">
 					Step {index + 1} &middot;{" "}
@@ -124,39 +152,59 @@ function ChainStep({
 function PlayPage() {
 	const navigate = useNavigate();
 	const [prompt, setPrompt] = useState("");
-	const [chain, setChain] = useState<Model[]>([]);
+	const [chain, setChain] = useState<ChainItem[]>([]);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [nextId, setNextId] = useState(1);
+
+	// DnD sensors for pointer and keyboard
+	const sensors = useSensors(
+		useSensor(PointerSensor, {
+			activationConstraint: {
+				distance: 8,
+			},
+		}),
+		useSensor(KeyboardSensor, {
+			coordinateGetter: sortableKeyboardCoordinates,
+		})
+	);
 
 	const addToChain = (model: Model) => {
-		setChain([...chain, model]);
+		setChain([...chain, { id: `chain-${nextId}`, model }]);
+		setNextId(nextId + 1);
 	};
 
-	const removeFromChain = (index: number) => {
-		setChain(chain.filter((_, i) => i !== index));
+	const removeFromChain = (id: string) => {
+		setChain(chain.filter((item) => item.id !== id));
 	};
 
-	const moveUp = (index: number) => {
-		if (index === 0) return;
-		const newChain = [...chain];
-		[newChain[index - 1], newChain[index]] = [
-			newChain[index],
-			newChain[index - 1],
-		];
-		setChain(newChain);
-	};
+	const handleDragEnd = (event: DragEndEvent) => {
+		const { active, over } = event;
 
-	const moveDown = (index: number) => {
-		if (index === chain.length - 1) return;
-		const newChain = [...chain];
-		[newChain[index], newChain[index + 1]] = [
-			newChain[index + 1],
-			newChain[index],
-		];
-		setChain(newChain);
+		if (over && active.id !== over.id) {
+			setChain((items) => {
+				const oldIndex = items.findIndex((item) => item.id === active.id);
+				const newIndex = items.findIndex((item) => item.id === over.id);
+				return arrayMove(items, oldIndex, newIndex);
+			});
+		}
 	};
 
 	const canStart = prompt.trim().length > 0 && chain.length >= 2;
+
+	// Validation warnings
+	const warnings: string[] = [];
+	if (chain.length > 0 && chain[0].model.type === "vision") {
+		warnings.push("First model should be text-to-image (vision models need an image input)");
+	}
+	if (chain.length >= 2) {
+		for (let i = 0; i < chain.length - 1; i++) {
+			if (chain[i].model.type === "vision" && chain[i + 1].model.type === "vision") {
+				warnings.push(`Steps ${i + 1} and ${i + 2} are both vision models - consider adding an image model between them`);
+				break;
+			}
+		}
+	}
 
 	const handleStart = async () => {
 		if (!canStart) return;
@@ -168,7 +216,7 @@ function PlayPage() {
 			const result = await createGame({
 				data: {
 					initialPrompt: prompt.trim(),
-					modelChain: chain.map((m) => m.id),
+					modelChain: chain.map((item) => item.model.id),
 				},
 			});
 			navigate({ to: "/game/$gameId", params: { gameId: result.gameId } });
@@ -263,39 +311,58 @@ function PlayPage() {
 									<p className="text-sm mt-1">Minimum 2 models required</p>
 								</div>
 							) : (
-								<div className="space-y-2 mb-4">
-									{chain.map((model, index) => (
-										<ChainStep
-											key={`${model.id}-${index}`}
-											model={model}
-											index={index}
-											onRemove={() => removeFromChain(index)}
-											onMoveUp={() => moveUp(index)}
-											onMoveDown={() => moveDown(index)}
-											isFirst={index === 0}
-											isLast={index === chain.length - 1}
-										/>
+								<DndContext
+									sensors={sensors}
+									collisionDetection={closestCenter}
+									onDragEnd={handleDragEnd}
+								>
+									<SortableContext
+										items={chain.map((item) => item.id)}
+										strategy={verticalListSortingStrategy}
+									>
+										<div className="space-y-2 mb-4">
+											{chain.map((item, index) => (
+												<SortableChainStep
+													key={item.id}
+													item={item}
+													index={index}
+													onRemove={() => removeFromChain(item.id)}
+												/>
+											))}
+										</div>
+									</SortableContext>
+								</DndContext>
+							)}
+
+							{/* Warnings */}
+							{warnings.length > 0 && (
+								<div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+									{warnings.map((warning, i) => (
+										<div key={i} className="flex items-start gap-2 text-yellow-400 text-sm">
+											<AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+											<span>{warning}</span>
+										</div>
 									))}
 								</div>
 							)}
 
 							{/* Chain Flow Preview */}
 							{chain.length > 0 && (
-								<div className="mt-4 pt-4 border-t border-slate-700">
+								<div className="pt-4 border-t border-slate-700">
 									<div className="text-sm text-gray-400 mb-2">Flow:</div>
-									<div className="text-xs text-gray-500">
+									<div className="text-xs text-gray-500 flex flex-wrap items-center gap-1">
 										<span className="text-cyan-400">Prompt</span>
-										{chain.map((model, i) => (
-											<span key={`flow-${model.id}-${i}`}>
-												{" → "}
+										{chain.map((item, i) => (
+											<span key={`flow-${item.id}`} className="flex items-center">
+												<span className="mx-1">→</span>
 												<span
 													className={
-														model.type === "text-to-image"
+														item.model.type === "text-to-image"
 															? "text-purple-400"
 															: "text-green-400"
 													}
 												>
-													{model.displayName}
+													{item.model.displayName}
 												</span>
 											</span>
 										))}
