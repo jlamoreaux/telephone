@@ -72,22 +72,6 @@ function buildVisionInput(modelId: string, imageUrl: string): Record<string, unk
 		};
 	}
 
-	// Qwen2 VL uses 'media' (single)
-	if (modelId === "lucataco/qwen2-vl-7b-instruct") {
-		return {
-			media: imageUrl,
-			prompt: VISION_PROMPT,
-		};
-	}
-
-	// Qwen 2.5 Omni uses 'image' (single)
-	if (modelId === "lucataco/qwen2.5-omni-7b") {
-		return {
-			image: imageUrl,
-			prompt: VISION_PROMPT,
-		};
-	}
-
 	// LLaVA models use 'image' (single)
 	if (modelId.includes("llava")) {
 		return {

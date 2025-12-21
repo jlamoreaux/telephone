@@ -214,23 +214,6 @@ export const VISION_MODELS: Model[] = [
 		owner: "anthropic",
 		name: "claude-3.7-sonnet",
 	},
-	// Qwen
-	{
-		id: "lucataco/qwen2.5-omni-7b",
-		displayName: "Qwen 2.5 Omni",
-		type: "vision",
-		description: "Multimodal model for text, images, audio, video",
-		owner: "lucataco",
-		name: "qwen2.5-omni-7b",
-	},
-	{
-		id: "lucataco/qwen2-vl-7b-instruct",
-		displayName: "Qwen2 VL",
-		type: "vision",
-		description: "Chat with video and images",
-		owner: "lucataco",
-		name: "qwen2-vl-7b-instruct",
-	},
 	// Other vision models
 	{
 		id: "lucataco/moondream2",
