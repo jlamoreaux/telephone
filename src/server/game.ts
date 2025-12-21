@@ -21,10 +21,16 @@ import {
 interface CreateGameInput {
 	initialPrompt: string;
 	modelChain: string[];
+	replicateToken: string;
 }
 
 interface GameIdInput {
 	gameId: string;
+}
+
+interface RunGameStepInput {
+	gameId: string;
+	replicateToken: string;
 }
 
 // Validation constants
@@ -56,7 +62,12 @@ function getClientIP(): string {
 export const createGame = createServerFn({ method: "POST" })
 	.inputValidator((data: CreateGameInput) => data)
 	.handler(async ({ data }) => {
-		const { initialPrompt, modelChain } = data;
+		const { initialPrompt, modelChain, replicateToken } = data;
+
+		// Validate API token
+		if (!replicateToken || replicateToken.trim().length < 1) {
+			throw new Error("Replicate API token is required");
+		}
 
 		// Check rate limit
 		const clientIP = getClientIP();
@@ -141,9 +152,13 @@ export const getGame = createServerFn({ method: "GET" })
 
 // Start or continue running the game
 export const runGameStep = createServerFn({ method: "POST" })
-	.inputValidator((data: GameIdInput) => data)
+	.inputValidator((data: RunGameStepInput) => data)
 	.handler(async ({ data }) => {
-		const { gameId } = data;
+		const { gameId, replicateToken } = data;
+
+		if (!replicateToken) {
+			throw new Error("Replicate API token is required");
+		}
 
 		// Get current game state
 		const game = await db.query.games.findFirst({
@@ -266,7 +281,7 @@ export const runGameStep = createServerFn({ method: "POST" })
 		// If step is pending, start the prediction
 		if (step.status === "pending") {
 			try {
-				const prediction = await createPrediction(modelId, modelType, input);
+				const prediction = await createPrediction(modelId, modelType, input, replicateToken);
 				await db
 					.update(gameSteps)
 					.set({
@@ -297,7 +312,7 @@ export const runGameStep = createServerFn({ method: "POST" })
 
 		// If step is running, check prediction status
 		if (step.status === "running" && step.predictionId) {
-			const prediction = await getPrediction(step.predictionId);
+			const prediction = await getPrediction(step.predictionId, replicateToken);
 
 			if (prediction.status === "succeeded") {
 				// Extract output based on model type

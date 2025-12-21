@@ -1,5 +1,4 @@
 import Replicate from "replicate";
-import { getRequiredEnv } from "@/env";
 import { getModelById, VISION_PROMPT, type ModelType } from "./models";
 
 // Retry configuration
@@ -91,13 +90,16 @@ function isRetryableError(error: unknown): boolean {
 }
 
 // Initialize Replicate client (server-side only)
-function getClient() {
+function getClient(token: string) {
 	// Ensure this only runs on the server
 	if (typeof window !== "undefined") {
 		throw new Error("Replicate client can only be used on the server");
 	}
 
-	const token = getRequiredEnv("REPLICATE_API_TOKEN");
+	if (!token) {
+		throw new Error("Replicate API token is required");
+	}
+
 	return new Replicate({ auth: token });
 }
 
@@ -112,8 +114,9 @@ export interface PredictionResult {
 export async function createImagePrediction(
 	modelId: string,
 	prompt: string,
+	token: string,
 ): Promise<PredictionResult> {
-	const client = getClient();
+	const client = getClient(token);
 	const model = getModelById(modelId);
 
 	if (!model || model.type !== "text-to-image") {
@@ -177,8 +180,9 @@ function buildVisionInput(modelId: string, imageUrl: string): Record<string, unk
 export async function createVisionPrediction(
 	modelId: string,
 	imageUrl: string,
+	token: string,
 ): Promise<PredictionResult> {
-	const client = getClient();
+	const client = getClient(token);
 	const model = getModelById(modelId);
 
 	if (!model || model.type !== "vision") {
@@ -205,8 +209,9 @@ export async function createVisionPrediction(
 // Get the current status of a prediction
 export async function getPrediction(
 	predictionId: string,
+	token: string,
 ): Promise<PredictionResult> {
-	const client = getClient();
+	const client = getClient(token);
 
 	return withRetry(async () => {
 		const prediction = await client.predictions.get(predictionId);
@@ -223,10 +228,11 @@ export async function getPrediction(
 // Wait for a prediction to complete (with polling)
 export async function waitForPrediction(
 	predictionId: string,
+	token: string,
 	maxAttempts = 60,
 	intervalMs = 2000,
 ): Promise<PredictionResult> {
-	const client = getClient();
+	const client = getClient(token);
 
 	for (let attempt = 0; attempt < maxAttempts; attempt++) {
 		const prediction = await client.predictions.get(predictionId);
@@ -278,9 +284,10 @@ export async function createPrediction(
 	modelId: string,
 	modelType: ModelType,
 	input: string,
+	token: string,
 ): Promise<PredictionResult> {
 	if (modelType === "text-to-image") {
-		return createImagePrediction(modelId, input);
+		return createImagePrediction(modelId, input, token);
 	}
-	return createVisionPrediction(modelId, input);
+	return createVisionPrediction(modelId, input, token);
 }

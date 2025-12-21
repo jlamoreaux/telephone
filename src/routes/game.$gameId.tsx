@@ -25,6 +25,14 @@ function isValidImageUrl(url: string): boolean {
 	}
 }
 
+// LocalStorage key for Replicate API token
+const REPLICATE_TOKEN_KEY = "replicate_api_token";
+
+function getStoredToken(): string {
+	if (typeof window === "undefined") return "";
+	return localStorage.getItem(REPLICATE_TOKEN_KEY) || "";
+}
+
 // Get site URL from environment (set in production)
 const SITE_URL = process.env.SITE_URL || "";
 
@@ -216,7 +224,19 @@ function GamePage() {
 	const [isPolling, setIsPolling] = useState(true);
 	const [errorCount, setErrorCount] = useState(0);
 	const [copied, setCopied] = useState(false);
+	const [apiToken, setApiToken] = useState("");
+	const [tokenError, setTokenError] = useState(false);
 	const isMountedRef = useRef(true);
+
+	// Load token from localStorage on mount
+	useEffect(() => {
+		const stored = getStoredToken();
+		setApiToken(stored);
+		if (!stored) {
+			setTokenError(true);
+			setIsPolling(false);
+		}
+	}, []);
 
 	const runStep = useCallback(async () => {
 		if (game.status === "completed" || game.status === "failed") {
@@ -224,8 +244,14 @@ function GamePage() {
 			return;
 		}
 
+		if (!apiToken) {
+			setTokenError(true);
+			setIsPolling(false);
+			return;
+		}
+
 		try {
-			const result = await runGameStep({ data: { gameId: game.id } });
+			const result = await runGameStep({ data: { gameId: game.id, replicateToken: apiToken } });
 
 			// Check if component is still mounted
 			if (!isMountedRef.current) return;
@@ -264,7 +290,7 @@ function GamePage() {
 				setIsPolling(false);
 			}
 		}
-	}, [game.id, game.status, errorCount]);
+	}, [game.id, game.status, errorCount, apiToken]);
 
 	useEffect(() => {
 		isMountedRef.current = true;
@@ -289,6 +315,29 @@ function GamePage() {
 			100,
 		100,
 	);
+
+	// If no token and game is not complete, show error
+	if (tokenError && game.status !== "completed" && game.status !== "failed") {
+		return (
+			<div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-6">
+				<div className="max-w-md mx-auto text-center py-20">
+					<h1 className="text-2xl font-bold text-white mb-4">
+						API Token Required
+					</h1>
+					<p className="text-gray-400 mb-6">
+						To run this game, you need to provide your Replicate API token.
+						Please go back to the play page and enter your token.
+					</p>
+					<Link
+						to="/play"
+						className="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold rounded-lg transition-colors"
+					>
+						Go to Play Page
+					</Link>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-6">
