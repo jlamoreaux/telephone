@@ -7,10 +7,10 @@
 	],
 	"main": "src/worker-entry.ts",
 	"vars": {
-		"SITE_URL": "https://telephone.jlmx.dev"
+		"SITE_URL": "https://airticphone.jlmx.dev"
 	},
 	"routes": [
-		{ "pattern": "telephone.jlmx.dev", "custom_domain": true }
+		{ "pattern": "airticphone.jlmx.dev", "custom_domain": true }
 	],
 	"d1_databases": [
 		{
