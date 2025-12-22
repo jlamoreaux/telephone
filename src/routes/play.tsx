@@ -75,9 +75,9 @@ function ModelCard({
 			)}
 			<div className="flex items-center gap-2 mb-1">
 				{isImage ? (
-					<Image className="w-4 h-4 text-purple-400" />
+					<Image className="w-4 h-4 text-amber-400" />
 				) : (
-					<Eye className="w-4 h-4 text-green-400" />
+					<Eye className="w-4 h-4 text-blue-400" />
 				)}
 				<span className="font-medium text-white text-sm">
 					{model.displayName}
@@ -139,13 +139,13 @@ function SortableChainStep({
 			</button>
 			<div
 				className={`w-8 h-8 rounded-full flex items-center justify-center ${
-					isImage ? "bg-purple-500/20" : "bg-green-500/20"
+					isImage ? "bg-amber-500/20" : "bg-blue-500/20"
 				}`}
 			>
 				{isImage ? (
-					<Image className="w-4 h-4 text-purple-400" />
+					<Image className="w-4 h-4 text-amber-400" />
 				) : (
-					<Eye className="w-4 h-4 text-green-400" />
+					<Eye className="w-4 h-4 text-blue-400" />
 				)}
 			</div>
 			<div className="flex-1 min-w-0">
@@ -297,11 +297,11 @@ function PlayPage() {
 					</p>
 					<div className="flex flex-wrap justify-center gap-x-2 text-sm text-gray-500">
 						<span>Describe something wild</span>
-						<span className="text-purple-400">→</span>
+						<span className="text-amber-400">→</span>
 						<span>AI draws it</span>
-						<span className="text-green-400">→</span>
+						<span className="text-blue-400">→</span>
 						<span>AI describes it</span>
-						<span className="text-purple-400">→</span>
+						<span className="text-amber-400">→</span>
 						<span>Repeat until chaos</span>
 					</div>
 				</div>
@@ -405,8 +405,8 @@ function PlayPage() {
 												<span
 													className={
 														item.model.type === "text-to-image"
-															? "text-purple-400"
-															: "text-green-400"
+															? "text-amber-400"
+															: "text-blue-400"
 													}
 												>
 													{item.model.displayName}
@@ -458,7 +458,7 @@ function PlayPage() {
 					<div className="lg:col-span-2 order-3 lg:order-2 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
 						<div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
 							<div className="flex items-center gap-2 mb-4">
-								<Image className="w-5 h-5 text-purple-400" />
+								<Image className="w-5 h-5 text-amber-400" />
 								<h2 className="text-lg font-semibold text-white">
 									Image Generation Models
 								</h2>
@@ -481,7 +481,7 @@ function PlayPage() {
 					<div className="lg:col-span-2 order-4 lg:order-4 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
 						<div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
 							<div className="flex items-center gap-2 mb-4">
-								<Eye className="w-5 h-5 text-green-400" />
+								<Eye className="w-5 h-5 text-blue-400" />
 								<h2 className="text-lg font-semibold text-white">
 									Vision Models
 								</h2>

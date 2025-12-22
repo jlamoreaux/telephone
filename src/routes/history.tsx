@@ -42,7 +42,7 @@ function GameCard({ game }: { game: Game }) {
 					{/* Status Badge */}
 					<div className="flex items-center gap-2 mb-2">
 						{game.status === "completed" && (
-							<span className="flex items-center gap-1 text-green-400 text-sm">
+							<span className="flex items-center gap-1 text-blue-400 text-sm">
 								<CheckCircle className="w-4 h-4" />
 								Completed
 							</span>

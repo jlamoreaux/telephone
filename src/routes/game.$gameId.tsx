@@ -38,8 +38,8 @@ export const Route = createFileRoute("/game/$gameId")({
 		const { game } = loaderData;
 		const title =
 			game.status === "completed"
-				? `Telephone AI Game - Complete`
-				: `Telephone AI Game - In Progress`;
+				? `AI-rtic Phone - Complete`
+				: `AI-rtic Phone - In Progress`;
 
 		// Truncate prompt for description
 		const promptPreview =
@@ -123,13 +123,13 @@ function StepCard({
 			<div className="flex items-center gap-3 mb-3">
 				<div
 					className={`w-10 h-10 rounded-full flex items-center justify-center ${
-						isImage ? "bg-purple-500/20" : "bg-green-500/20"
+						isImage ? "bg-amber-500/20" : "bg-blue-500/20"
 					}`}
 				>
 					{isImage ? (
-						<Image className="w-5 h-5 text-purple-400" />
+						<Image className="w-5 h-5 text-amber-400" />
 					) : (
-						<Eye className="w-5 h-5 text-green-400" />
+						<Eye className="w-5 h-5 text-blue-400" />
 					)}
 				</div>
 				<div className="flex-1">
@@ -142,7 +142,7 @@ function StepCard({
 				</div>
 				<div>
 					{step.status === "succeeded" && (
-						<CheckCircle className="w-5 h-5 text-green-400" />
+						<CheckCircle className="w-5 h-5 text-blue-400" />
 					)}
 					{step.status === "failed" && (
 						<XCircle className="w-5 h-5 text-red-400" />
@@ -375,9 +375,9 @@ function GamePage() {
 												}`}
 											>
 												{isImage ? (
-													<Image className="w-5 h-5 text-purple-400/50" />
+													<Image className="w-5 h-5 text-amber-400/50" />
 												) : (
-													<Eye className="w-5 h-5 text-green-400/50" />
+													<Eye className="w-5 h-5 text-blue-400/50" />
 												)}
 											</div>
 											<div>

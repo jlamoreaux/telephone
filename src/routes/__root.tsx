@@ -83,13 +83,13 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'Telephone AI',
+        title: 'AI-rtic Phone',
       },
       // SEO meta tags
       {
         name: 'description',
         content:
-          'Play AI Telephone - watch messages transform as they pass through chains of AI image generators and vision models.',
+          'Play AI-rtic Phone - watch messages transform as they pass through chains of AI image generators and vision models.',
       },
       {
         name: 'theme-color',
@@ -98,12 +98,12 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       // Open Graph meta tags
       {
         property: 'og:title',
-        content: 'Telephone AI - The AI Telephone Game',
+        content: 'AI-rtic Phone - The AI Drawing Game',
       },
       {
         property: 'og:description',
         content:
-          'Watch messages transform as they pass through chains of AI image generators and vision models. Like telephone, but with AI!',
+          'Watch messages transform as they pass through chains of AI image generators and vision models. Like Gartic Phone, but with AI!',
       },
       {
         property: 'og:type',
@@ -111,7 +111,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       {
         property: 'og:site_name',
-        content: 'Telephone AI',
+        content: 'AI-rtic Phone',
       },
       // Open Graph image
       {
@@ -125,7 +125,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       {
         name: 'twitter:title',
-        content: 'Telephone AI - The AI Telephone Game',
+        content: 'AI-rtic Phone - The AI Drawing Game',
       },
       {
         name: 'twitter:description',

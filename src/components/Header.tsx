@@ -6,7 +6,7 @@ export default function Header() {
 		<header className="p-4 flex items-center justify-between bg-slate-900/80 backdrop-blur-sm text-white border-b border-slate-700">
 			<Link to="/" className="flex items-center gap-2">
 				<Phone className="w-6 h-6 text-cyan-400" />
-				<span className="text-xl font-bold">Telephone AI</span>
+				<span className="text-xl font-bold">AI-rtic Phone</span>
 			</Link>
 
 			<nav className="flex items-center gap-4">
