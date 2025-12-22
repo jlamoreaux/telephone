@@ -10,6 +10,9 @@ import {
 	AlertTriangle,
 	Shuffle,
 	Dices,
+	Key,
+	ExternalLink,
+	Check,
 } from "lucide-react";
 import {
 	DndContext,
@@ -34,6 +37,24 @@ import { createGame } from "@/server/game";
 // Chain limits (must match server-side constants)
 const MAX_CHAIN_LENGTH = 10;
 const MAX_MODEL_USES = 2;
+
+// LocalStorage key for Replicate API token
+const REPLICATE_TOKEN_KEY = "replicate_api_token";
+
+// Get/set token from localStorage
+function getStoredToken(): string {
+	if (typeof window === "undefined") return "";
+	return localStorage.getItem(REPLICATE_TOKEN_KEY) || "";
+}
+
+function setStoredToken(token: string): void {
+	if (typeof window === "undefined") return;
+	if (token) {
+		localStorage.setItem(REPLICATE_TOKEN_KEY, token);
+	} else {
+		localStorage.removeItem(REPLICATE_TOKEN_KEY);
+	}
+}
 
 export const Route = createFileRoute("/play")({
 	component: PlayPage,
@@ -178,6 +199,37 @@ function PlayPage() {
 	const [nextId, setNextId] = useState(1);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+	// Replicate API token state
+	const [apiToken, setApiToken] = useState("");
+	const [tokenInput, setTokenInput] = useState("");
+	const [showTokenInput, setShowTokenInput] = useState(false);
+
+	// Load token from localStorage on mount
+	useEffect(() => {
+		const stored = getStoredToken();
+		setApiToken(stored);
+		setTokenInput(stored);
+		if (!stored) {
+			setShowTokenInput(true);
+		}
+	}, []);
+
+	const handleSaveToken = () => {
+		const trimmed = tokenInput.trim();
+		if (trimmed) {
+			setStoredToken(trimmed);
+			setApiToken(trimmed);
+			setShowTokenInput(false);
+		}
+	};
+
+	const handleClearToken = () => {
+		setStoredToken("");
+		setApiToken("");
+		setTokenInput("");
+		setShowTokenInput(true);
+	};
+
 	// Auto-resize textarea
 	useEffect(() => {
 		const textarea = textareaRef.current;
@@ -306,7 +358,7 @@ function PlayPage() {
 	};
 
 	const chainValidation = chain.length > 0 ? validateChainPattern() : { valid: false, errors: [], hints: [] };
-	const canStart = prompt.trim().length > 0 && chain.length >= 3 && chainValidation.valid;
+	const canStart = prompt.trim().length > 0 && chain.length >= 3 && chainValidation.valid && apiToken.length > 0;
 
 	// Info warnings (non-blocking)
 	const warnings: string[] = [];
@@ -325,6 +377,7 @@ function PlayPage() {
 				data: {
 					initialPrompt: prompt.trim(),
 					modelChain: chain.map((item) => item.model.id),
+					replicateToken: apiToken,
 				},
 			});
 			navigate({ to: "/game/$gameId", params: { gameId: result.gameId } });
@@ -355,29 +408,95 @@ function PlayPage() {
 					</div>
 				</div>
 
-				{/* Prompt Input - centered above grid */}
-				<div className="mb-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-					<div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700 max-w-xl mx-auto">
-						<label
-							htmlFor="prompt"
-							className="block text-lg font-semibold text-white mb-3 text-center"
-						>
-							Starting Prompt
-						</label>
-						<textarea
-							ref={textareaRef}
-							id="prompt"
-							value={prompt}
-							onChange={(e) => setPrompt(e.target.value)}
-							placeholder="Describe the first image you want to generate..."
-							className="w-full min-h-24 px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 resize-none overflow-hidden"
-						/>
-					</div>
+				{/* API Token Section - centered above grid */}
+				<div className="mb-6 animate-fade-in-up max-w-xl mx-auto">
+					{apiToken && !showTokenInput ? (
+						<div className="bg-slate-800/50 rounded-xl px-6 py-3 border border-slate-700 flex items-center justify-center gap-4">
+							<div className="flex items-center gap-2 text-green-400">
+								<Check className="w-4 h-4" />
+								<span className="text-sm">API token configured</span>
+							</div>
+							<button
+								type="button"
+								onClick={() => setShowTokenInput(true)}
+								className="text-sm text-gray-400 hover:text-white transition-colors"
+							>
+								Change
+							</button>
+						</div>
+					) : (
+						<div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700">
+							<div className="flex items-center gap-2 mb-2">
+								<Key className="w-5 h-5 text-cyan-400" />
+								<h2 className="text-lg font-semibold text-white">
+									Replicate API Token
+								</h2>
+							</div>
+							<p className="text-sm text-gray-400 mb-3">
+								Your token is stored locally and never sent to our servers.{" "}
+								<a
+									href="https://replicate.com/account/api-tokens"
+									target="_blank"
+									rel="noopener noreferrer"
+									className="text-cyan-400 hover:text-cyan-300 transition-colors"
+								>
+									Get one from Replicate
+									<ExternalLink className="w-3 h-3 inline ml-1" />
+								</a>
+							</p>
+							<div className="flex gap-2">
+								<input
+									type="password"
+									value={tokenInput}
+									onChange={(e) => setTokenInput(e.target.value)}
+									placeholder="r8_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+									className="flex-1 px-4 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+								/>
+								<button
+									type="button"
+									onClick={handleSaveToken}
+									disabled={!tokenInput.trim()}
+									className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-slate-700 disabled:text-gray-500 text-white font-medium rounded-lg transition-colors"
+								>
+									Save
+								</button>
+								{apiToken && (
+									<button
+										type="button"
+										onClick={handleClearToken}
+										className="px-4 py-2 text-gray-400 hover:text-red-400 transition-colors"
+									>
+										Clear
+									</button>
+								)}
+							</div>
+						</div>
+					)}
 				</div>
 
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+					{/* Prompt Input */}
+					<div className="lg:col-span-2 order-1 animate-fade-in-up">
+						<div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+							<label
+								htmlFor="prompt"
+								className="block text-lg font-semibold text-white mb-3"
+							>
+								Starting Prompt
+							</label>
+							<textarea
+								ref={textareaRef}
+								id="prompt"
+								value={prompt}
+								onChange={(e) => setPrompt(e.target.value)}
+								placeholder="Describe the first image you want to generate..."
+								className="w-full min-h-24 px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 resize-none overflow-hidden"
+							/>
+						</div>
+					</div>
+
 					{/* Chain Builder - second on mobile, right column on desktop */}
-					<div className="lg:col-span-1 order-2 lg:order-3 lg:row-span-2">
+					<div className="lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:row-span-3 order-2">
 						<div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700 sticky top-6 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
 							<div className="flex items-center justify-between mb-4">
 								<h2 className="text-lg font-semibold text-white">
@@ -529,6 +648,11 @@ function PlayPage() {
 							{!canStart && chain.length > 0 && !prompt.trim() && (
 								<p className="text-center text-sm text-gray-500 mt-2">
 									Enter a prompt to start
+								</p>
+							)}
+							{!canStart && !apiToken && (
+								<p className="text-center text-sm text-gray-500 mt-2">
+									Add your API token to start
 								</p>
 							)}
 						</div>
