@@ -221,7 +221,7 @@ function GamePage() {
 	const initialData = Route.useLoaderData();
 	const [game, setGame] = useState<Game>(initialData.game);
 	const [steps, setSteps] = useState<GameStep[]>(initialData.steps);
-	const [isPolling, setIsPolling] = useState(true);
+	const [isPolling, setIsPolling] = useState(false);
 	const [errorCount, setErrorCount] = useState(0);
 	const [copied, setCopied] = useState(false);
 	const [apiToken, setApiToken] = useState("");
@@ -232,9 +232,11 @@ function GamePage() {
 	useEffect(() => {
 		const stored = getStoredToken();
 		setApiToken(stored);
-		if (!stored) {
+		if (stored) {
+			// Start polling only after token is loaded
+			setIsPolling(true);
+		} else {
 			setTokenError(true);
-			setIsPolling(false);
 		}
 	}, []);
 
