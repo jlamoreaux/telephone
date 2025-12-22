@@ -9,6 +9,7 @@ import {
 	GripVertical,
 	AlertTriangle,
 	Shuffle,
+	Dices,
 } from "lucide-react";
 import {
 	DndContext,
@@ -246,23 +247,71 @@ function PlayPage() {
 		setChain(sorted);
 	};
 
-	const canStart = prompt.trim().length > 0 && chain.length >= 2;
+	// Validate chain pattern: must be image → vision → image → vision → ... → image
+	const validateChainPattern = (): { valid: boolean; errors: string[]; hints: string[] } => {
+		const errors: string[] = [];
+		const hints: string[] = [];
 
-	// Validation warnings
+		if (chain.length < 3) {
+			errors.push("Need at least 3 models");
+			hints.push("Try: Image → Vision → Image");
+			return { valid: false, errors, hints };
+		}
+
+		// Must start with image
+		if (chain[0].model.type !== "text-to-image") {
+			errors.push("First model must generate an image");
+			hints.push("Drag an image model to position 1, or use auto-sort");
+		}
+
+		// Must end with image
+		if (chain[chain.length - 1].model.type !== "text-to-image") {
+			errors.push("Last model must generate an image");
+			hints.push("Add an image model at the end, or use auto-sort");
+		}
+
+		// Must alternate
+		for (let i = 0; i < chain.length - 1; i++) {
+			if (chain[i].model.type === chain[i + 1].model.type) {
+				const type = chain[i].model.type === "text-to-image" ? "image" : "vision";
+				errors.push(`Steps ${i + 1} & ${i + 2} are both ${type} models`);
+				if (!hints.length) {
+					hints.push("Use auto-sort to fix the order automatically");
+				}
+			}
+		}
+
+		return { valid: errors.length === 0, errors, hints };
+	};
+
+	// Random fill: generates a valid chain with n models
+	const randomFill = (count: number) => {
+		// Must be odd number >= 3 for valid pattern
+		const validCount = Math.max(3, count % 2 === 0 ? count + 1 : count);
+		const limitedCount = Math.min(validCount, MAX_CHAIN_LENGTH);
+
+		const newChain: ChainItem[] = [];
+		let id = nextId;
+
+		for (let i = 0; i < limitedCount; i++) {
+			const isImageSlot = i % 2 === 0;
+			const modelList = isImageSlot ? TEXT_TO_IMAGE_MODELS : VISION_MODELS;
+			const randomModel = modelList[Math.floor(Math.random() * modelList.length)];
+			newChain.push({ id: `chain-${id}`, model: randomModel });
+			id++;
+		}
+
+		setChain(newChain);
+		setNextId(id);
+	};
+
+	const chainValidation = chain.length > 0 ? validateChainPattern() : { valid: false, errors: [], hints: [] };
+	const canStart = prompt.trim().length > 0 && chain.length >= 3 && chainValidation.valid;
+
+	// Info warnings (non-blocking)
 	const warnings: string[] = [];
 	if (chain.length >= MAX_CHAIN_LENGTH) {
 		warnings.push(`Chain is at maximum length (${MAX_CHAIN_LENGTH} models)`);
-	}
-	if (chain.length > 0 && chain[0].model.type === "vision") {
-		warnings.push("First model should be text-to-image (vision models need an image input)");
-	}
-	if (chain.length >= 2) {
-		for (let i = 0; i < chain.length - 1; i++) {
-			if (chain[i].model.type === "vision" && chain[i + 1].model.type === "vision") {
-				warnings.push(`Steps ${i + 1} and ${i + 2} are both vision models - consider adding an image model between them`);
-				break;
-			}
-		}
 	}
 
 	const handleStart = async () => {
@@ -340,7 +389,7 @@ function PlayPage() {
 											type="button"
 											onClick={autoSortChain}
 											className="p-1.5 text-gray-400 hover:text-cyan-400 transition-colors"
-											title="Auto-sort: alternate image/vision"
+											title="Auto-sort: Reorder to Image → Vision → Image pattern"
 										>
 											<Shuffle className="w-4 h-4" />
 										</button>
@@ -352,10 +401,22 @@ function PlayPage() {
 							</div>
 
 							{chain.length === 0 ? (
-								<div className="text-center py-8 text-gray-500">
-									<Plus className="w-8 h-8 mx-auto mb-2 opacity-50" />
-									<p>Click models to add them to your chain</p>
-									<p className="text-sm mt-1">Minimum 2 models required</p>
+								<div className="text-center py-6 text-gray-500">
+									<Dices className="w-8 h-8 mx-auto mb-3 opacity-50" />
+									<p className="text-sm mb-3">Quick start with random models:</p>
+									<div className="flex justify-center gap-2 mb-4">
+										{[3, 5, 7].map((n) => (
+											<button
+												key={n}
+												type="button"
+												onClick={() => randomFill(n)}
+												className="px-3 py-1.5 text-sm bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+											>
+												{n} models
+											</button>
+										))}
+									</div>
+									<p className="text-xs text-gray-600">or pick your own below</p>
 								</div>
 							) : (
 								<DndContext
@@ -381,7 +442,26 @@ function PlayPage() {
 								</DndContext>
 							)}
 
-							{/* Warnings */}
+							{/* Pattern Errors (blocking) */}
+							{chainValidation.errors.length > 0 && (
+								<div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+									<div className="space-y-1 mb-2">
+										{chainValidation.errors.map((err, i) => (
+											<div key={i} className="flex items-start gap-2 text-red-400 text-sm">
+												<AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+												<span>{err}</span>
+											</div>
+										))}
+									</div>
+									{chainValidation.hints.length > 0 && (
+										<div className="text-xs text-gray-400 border-t border-red-500/20 pt-2 mt-2">
+											{chainValidation.hints[0]}
+										</div>
+									)}
+								</div>
+							)}
+
+							{/* Info Warnings (non-blocking) */}
 							{warnings.length > 0 && (
 								<div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
 									{warnings.map((warning, i) => (
@@ -446,9 +526,9 @@ function PlayPage() {
 								)}
 							</button>
 
-							{!canStart && chain.length > 0 && chain.length < 2 && (
+							{!canStart && chain.length > 0 && !prompt.trim() && (
 								<p className="text-center text-sm text-gray-500 mt-2">
-									Add at least one more model
+									Enter a prompt to start
 								</p>
 							)}
 						</div>

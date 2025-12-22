@@ -1,12 +1,16 @@
 import { Link } from "@tanstack/react-router";
-import { Phone, Play, History } from "lucide-react";
+import { Play, History } from "lucide-react";
 
 export default function Header() {
 	return (
 		<header className="p-4 flex items-center justify-between bg-slate-900/80 backdrop-blur-sm text-white border-b border-slate-700">
-			<Link to="/" className="flex items-center gap-2">
-				<Phone className="w-6 h-6 text-cyan-400" />
-				<span className="text-xl font-bold">AI-rtic Phone</span>
+			<Link to="/" className="group flex items-center gap-1">
+				<span className="text-xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent group-hover:from-amber-300 group-hover:to-orange-400 transition-all">
+					AI
+				</span>
+				<span className="text-xl font-bold text-white group-hover:text-gray-200 transition-colors">
+					-rtic Phone
+				</span>
 			</Link>
 
 			<nav className="flex items-center gap-4">
