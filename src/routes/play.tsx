@@ -408,35 +408,43 @@ function PlayPage() {
 					</div>
 				</div>
 
-				{/* API Token Section */}
-				<div className="mb-6 animate-fade-in-up">
+				{/* API Token Section - centered above grid */}
+				<div className="mb-6 animate-fade-in-up max-w-xl mx-auto">
 					{apiToken && !showTokenInput ? (
-						<div className="flex items-center justify-center gap-3 text-sm">
+						<div className="bg-slate-800/50 rounded-xl px-6 py-3 border border-slate-700 flex items-center justify-center gap-4">
 							<div className="flex items-center gap-2 text-green-400">
 								<Check className="w-4 h-4" />
-								<span>API token configured</span>
+								<span className="text-sm">API token configured</span>
 							</div>
 							<button
 								type="button"
 								onClick={() => setShowTokenInput(true)}
-								className="text-gray-400 hover:text-white transition-colors"
+								className="text-sm text-gray-400 hover:text-white transition-colors"
 							>
 								Change
 							</button>
 						</div>
 					) : (
-						<div className="max-w-xl mx-auto bg-slate-800/50 rounded-xl p-6 border border-slate-700">
-							<div className="flex items-center gap-2 mb-3">
+						<div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700">
+							<div className="flex items-center gap-2 mb-2">
 								<Key className="w-5 h-5 text-cyan-400" />
 								<h2 className="text-lg font-semibold text-white">
 									Replicate API Token
 								</h2>
 							</div>
-							<p className="text-sm text-gray-400 mb-4">
-								This app uses your own Replicate API token to run AI models.
-								Your token is stored locally in your browser and never sent to our servers.
+							<p className="text-sm text-gray-400 mb-3">
+								Your token is stored locally and never sent to our servers.{" "}
+								<a
+									href="https://replicate.com/account/api-tokens"
+									target="_blank"
+									rel="noopener noreferrer"
+									className="text-cyan-400 hover:text-cyan-300 transition-colors"
+								>
+									Get one from Replicate
+									<ExternalLink className="w-3 h-3 inline ml-1" />
+								</a>
 							</p>
-							<div className="flex gap-2 mb-3">
+							<div className="flex gap-2">
 								<input
 									type="password"
 									value={tokenInput}
@@ -452,32 +460,23 @@ function PlayPage() {
 								>
 									Save
 								</button>
+								{apiToken && (
+									<button
+										type="button"
+										onClick={handleClearToken}
+										className="px-4 py-2 text-gray-400 hover:text-red-400 transition-colors"
+									>
+										Clear
+									</button>
+								)}
 							</div>
-							<a
-								href="https://replicate.com/account/api-tokens"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="inline-flex items-center gap-1 text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
-							>
-								Get your API token from Replicate
-								<ExternalLink className="w-3 h-3" />
-							</a>
-							{apiToken && (
-								<button
-									type="button"
-									onClick={handleClearToken}
-									className="ml-4 text-sm text-gray-400 hover:text-red-400 transition-colors"
-								>
-									Clear token
-								</button>
-							)}
 						</div>
 					)}
 				</div>
 
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-					{/* Prompt Input - always first */}
-					<div className="lg:col-span-2 order-1 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+					{/* Prompt Input */}
+					<div className="lg:col-span-2 order-1 animate-fade-in-up">
 						<div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
 							<label
 								htmlFor="prompt"
@@ -497,7 +496,7 @@ function PlayPage() {
 					</div>
 
 					{/* Chain Builder - second on mobile, right column on desktop */}
-					<div className="lg:col-span-1 order-2 lg:order-3 lg:row-span-2">
+					<div className="lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:row-span-3 order-2">
 						<div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700 sticky top-6 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
 							<div className="flex items-center justify-between mb-4">
 								<h2 className="text-lg font-semibold text-white">
