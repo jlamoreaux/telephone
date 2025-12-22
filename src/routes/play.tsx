@@ -355,29 +355,29 @@ function PlayPage() {
 					</div>
 				</div>
 
-				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-					{/* Prompt Input - always first */}
-					<div className="lg:col-span-2 order-1 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-						<div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
-							<label
-								htmlFor="prompt"
-								className="block text-lg font-semibold text-white mb-3"
-							>
-								Starting Prompt
-							</label>
-							<textarea
-								ref={textareaRef}
-								id="prompt"
-								value={prompt}
-								onChange={(e) => setPrompt(e.target.value)}
-								placeholder="Describe the first image you want to generate..."
-								className="w-full min-h-24 px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 resize-none overflow-hidden"
-							/>
-						</div>
+				{/* Prompt Input - centered above grid */}
+				<div className="mb-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+					<div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700 max-w-xl mx-auto">
+						<label
+							htmlFor="prompt"
+							className="block text-lg font-semibold text-white mb-3 text-center"
+						>
+							Starting Prompt
+						</label>
+						<textarea
+							ref={textareaRef}
+							id="prompt"
+							value={prompt}
+							onChange={(e) => setPrompt(e.target.value)}
+							placeholder="Describe the first image you want to generate..."
+							className="w-full min-h-24 px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 resize-none overflow-hidden"
+						/>
 					</div>
+				</div>
 
+				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 					{/* Chain Builder - second on mobile, right column on desktop */}
-					<div className="lg:col-span-1 order-2 lg:order-3 lg:row-span-3">
+					<div className="lg:col-span-1 order-2 lg:order-3 lg:row-span-2">
 						<div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700 sticky top-6 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
 							<div className="flex items-center justify-between mb-4">
 								<h2 className="text-lg font-semibold text-white">
