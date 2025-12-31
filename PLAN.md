@@ -1,4 +1,4 @@
-# Telephone AI - Implementation Plan
+# AI-rtic Phone - Implementation Plan
 
 ## Project Overview
 
