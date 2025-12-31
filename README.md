@@ -1,4 +1,4 @@
-# Telephone AI
+# AI-rtic Phone
 
 A game of "telephone" played by AI models. Pick your players, give them a prompt, and watch as the message transforms through a chain of image generation and analysis.
 
@@ -33,8 +33,8 @@ A game of "telephone" played by AI models. Pick your players, give them a prompt
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/telephone-ai.git
-cd telephone-ai
+git clone https://github.com/your-username/ai-rtic-phone.git
+cd ai-rtic-phone
 
 # Install dependencies
 bun install
